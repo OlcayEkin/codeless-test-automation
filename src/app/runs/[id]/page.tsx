@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TopBar } from "@/components/top-bar";
 import { notFound } from "next/navigation";
 import { cancelRunAction, setTriageAction } from "@/app/plans/actions";
 import { ACTIVE_STATUSES, getRunForTeam } from "@/lib/runs";
@@ -35,7 +36,9 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
   const fileLink = (resultId: string, kind: string) => `/runs/${run.id}/files/${resultId}/${kind}`;
 
   return (
-    <main className="page">
+    <>
+      <TopBar user={user} />
+      <main className="page">
       {active && <AutoRefresh intervalMs={1500} />}
       <p>
         <Link href={`/plans/${run.plan.id}`}>← {run.plan.name}</Link>
@@ -193,6 +196,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
           To replay a trace step by step, download it and run: <code>npx playwright show-trace trace.zip</code>
         </p>
       )}
-    </main>
+      </main>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TopBar } from "@/components/top-bar";
 import { notFound } from "next/navigation";
 import { getRunSetup } from "@/lib/runs";
 import { requireUser } from "@/lib/session";
@@ -11,7 +12,9 @@ export default async function RunSettingsPage({ params }: { params: Promise<{ id
   if (!setup) notFound();
 
   return (
-    <main className="page narrow">
+    <>
+      <TopBar user={user} />
+      <main className="page narrow">
       <p>
         <Link href={`/plans/${setup.id}`}>← {setup.name}</Link>
       </p>
@@ -20,6 +23,7 @@ export default async function RunSettingsPage({ params }: { params: Promise<{ id
         Runs version {setup.version} of {setup.name}. You can follow the progress live.
       </p>
       <RunSettingsForm planId={setup.id} counts={setup.counts} />
-    </main>
+      </main>
+    </>
   );
 }

@@ -141,3 +141,18 @@ td .file-links, td .badge { margin-left: 0.75rem; }
 .last-run:hover { text-decoration: underline; }
 .last-run-parts { display: inline-flex; gap: 0.75rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.topbar .brand { font-weight: 700; color: var(--text); text-decoration: none; }
+.bell { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; border-radius: 8px; text-decoration: none; font-size: 1.1rem; }
+.bell:hover { background: var(--bg); }
+.bell-count { position: absolute; top: -2px; right: -4px; min-width: 1.15rem; height: 1.15rem; padding: 0 0.3rem; border-radius: 999px; background: var(--status-critical); color: #fff; font-size: 0.7rem; font-weight: 700; display: grid; place-items: center; }
+.notifications { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.notification-button { width: 100%; display: grid; gap: 0.2rem; text-align: left; font-weight: 400; background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 0.9rem 1rem; }
+.notification.unread .notification-button { border-left: 4px solid var(--accent); }
+.notification.unread .notification-title { font-weight: 700; }
+.notification.read .notification-button { opacity: 0.8; }
+.schedule-fields { display: grid; gap: 0.75rem; margin: 0.25rem 0 0 1.5rem; }
+select { font: inherit; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
+.schedules { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.75rem; }
+.schedule { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; }
+.schedule > div:first-child { display: grid; gap: 0.15rem; }
+.schedule-actions { display: flex; gap: 0.4rem; align-items: flex-start; }

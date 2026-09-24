@@ -46,13 +46,18 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
           <p className="muted">
             Version {version.version} · {version.testCases.length} test cases ·{" "}
             {DESCRIBED_FORMATS.has(version.format) ? version.fileName : `${FORMAT_LABEL[version.format] ?? version.format} file “${version.fileName}”`} ·{" "}
-            {version.format === "edit" ? "changed" : version.format === "follow-up" ? "created" : "uploaded"} by {version.uploadedBy.name} on {formatDate(version.createdAt)}
+            {version.format === "edit" ? "changed" : version.format === "follow-up" || version.format === "demo" ? "created" : "uploaded"} by {version.uploadedBy.name} on {formatDate(version.createdAt)}
           </p>
         </div>
         <div className="head-actions">
           <Link href={`/plans/${plan.id}/run`} className="button">
             ▶ Run tests
           </Link>
+          {isLatest && (
+            <Link href={`/plans/${plan.id}/test-cases/new`} className="button secondary-button">
+              + Create test case
+            </Link>
+          )}
           {canDeletePlan(user, plan) && <DeletePlanButton planId={plan.id} planName={plan.name} versionCount={plan.versions.length} />}
         </div>
       </div>
@@ -86,13 +91,6 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
 
       <QualitySummary status={version.qualityStatus} flagged={flagged} total={version.testCases.length} />
 
-      {isLatest && (
-        <p className="cases-head">
-          <Link href={`/plans/${plan.id}/test-cases/new`} className="button secondary-button">
-            + Create test case
-          </Link>
-        </p>
-      )}
       <TestCaseList plan={plan} testCases={version.testCases} editable={isLatest} />
 
       <div className="columns">

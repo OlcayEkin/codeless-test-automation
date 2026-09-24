@@ -50,6 +50,7 @@ model TestPlan {
   versions    TestPlanVersion[]
   runs        TestRun[]
   schedules   TestSchedule[]
+  config      PlanConfig?
   /// Set when this plan was created from the failures of an earlier run.
   sourceRunId String?
   sourceRun   TestRun?          @relation("FollowUpPlans", fields: [sourceRunId], references: [id], onDelete: SetNull)
@@ -131,6 +132,10 @@ model TestRun {
   /// Set when the run was started by a schedule instead of the Run tests button.
   scheduleId    String?
   schedule      TestSchedule?   @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  /// app, schedule or ci: what started the run.
+  source        String          @default("app")
+  /// For CI runs: the pipeline run's id and link.
+  ciInfo        Json?
   notifications Notification[]
 
   @@index([status, createdAt])
@@ -199,4 +204,31 @@ model Notification {
   createdAt DateTime  @default(now())
 
   @@index([userId, readAt])
+}
+
+/// Where a plan's tests run. "local" needs nothing else; "ci" sends runs to GitHub Actions.
+model PlanConfig {
+  id                   String    @id @default(cuid())
+  planId               String    @unique
+  plan                 TestPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  /// local or ci
+  mode                 String    @default("local")
+  /// github (the only CI provider for now)
+  provider             String    @default("github")
+  /// owner/name
+  repository           String?
+  workflowFile         String?
+  branch               String?
+  /// Base address of the environment the tests run against, for paths such as /login.
+  baseUrl              String?
+  /// AES-256-GCM encrypted access token; never sent back to the browser.
+  tokenEncrypted       String?
+  /// Last four characters, shown so people can tell which token is saved.
+  tokenHint            String?
+  /// access or failed, from the last connection check.
+  connectionStatus     String?
+  connectionMessage    String?
+  connectionCheckedAt  DateTime?
+  updatedById          String?
+  updatedAt            DateTime  @updatedAt
 }

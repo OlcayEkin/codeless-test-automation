@@ -4,6 +4,7 @@ const PORT = 3100;
 
 // End-to-end tests use their own database and credentials, never your dev data.
 export const E2E_USER = { email: "e2e@example.com", password: "e2e-Password-123" };
+export const FAKE_GITHUB_PORT = 3199;
 const E2E_ENV = { DATABASE_URL: "file:./data/e2e.db", RESULTS_DIR: "results-e2e" };
 
 export default defineConfig({
@@ -33,6 +34,8 @@ export default defineConfig({
         NEXT_DIST_DIR: ".next-e2e",
         // Tests must not depend on, or spend credits with, the external Jev service.
         JEV_DISABLED: "1",
+        // A fake GitHub started by tests/configuration.spec.ts.
+        GITHUB_API_URL: `http://127.0.0.1:${FAKE_GITHUB_PORT}`,
       },
     },
     {

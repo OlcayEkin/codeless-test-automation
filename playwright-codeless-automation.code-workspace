@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "name": "playwright-codeless-automation",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.git": true,
+      "**/.DS_Store": true
+    }
+  }
+}

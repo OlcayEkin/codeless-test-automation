@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+model Team {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  users     User[]
+  testPlans TestPlan[]
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String?    @unique
+  username     String?    @unique
+  name         String
+  passwordHash String
+  role         Role       @default(MEMBER)
+  teamId       String
+  team         Team       @relation(fields: [teamId], references: [id])
+  createdAt    DateTime   @default(now())
+  testPlans    TestPlan[]
+  uploads      TestPlanVersion[]
+  testRuns     TestRun[]
+  triaged      TestRunResult[]
+}
+
+model TestPlan {
+  id          String            @id @default(cuid())
+  name        String
+  teamId      String
+  team        Team              @relation(fields: [teamId], references: [id])
+  createdById String
+  createdBy   User              @relation(fields: [createdById], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  versions    TestPlanVersion[]
+  runs        TestRun[]
+  /// Set when this plan was created from the failures of an earlier run.
+  sourceRunId String?
+  sourceRun   TestRun?          @relation("FollowUpPlans", fields: [sourceRunId], references: [id], onDelete: SetNull)
+
+  @@index([teamId])
+}
+
+/// Every upload creates a new version. Old versions are kept so past results still point to the tests that ran.
+model TestPlanVersion {
+  id            String     @id @default(cuid())
+  planId        String
+  plan          TestPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  version       Int
+  fileName      String
+  format        String // xlsx, csv or json
+  uploadedById  String
+  uploadedBy    User       @relation(fields: [uploadedById], references: [id])
+  createdAt     DateTime   @default(now())
+  /// scored, unavailable or skipped: whether Jev quality scores were collected for this upload.
+  qualityStatus String
+  testCases     TestCase[]
+  runs          TestRun[]
+
+  @@unique([planId, version])
+}
+
+model TestCase {
+  id         String          @id @default(cuid())
+  versionId  String
+  version    TestPlanVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  position   Int
+  externalId String
+  name       String
+  /// Jev scores and plain-language flags, or null when scoring was not available.
+  quality    Json?
+  steps      TestStep[]
+
+  @@unique([versionId, externalId])
+}
+
+model TestStep {
+  id         String   @id @default(cuid())
+  testCaseId String
+  testCase   TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  position   Int
+  action     String
+  target     String?
+  value      String?
+  expected   String?
+}
+
+/// One press of Play. The worker process picks up queued runs, oldest first.
+model TestRun {
+  id            String          @id @default(cuid())
+  planId        String
+  plan          TestPlan        @relation(fields: [planId], references: [id], onDelete: Cascade)
+  versionId     String
+  version       TestPlanVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  requestedById String
+  requestedBy   User            @relation(fields: [requestedById], references: [id])
+  /// Comma separated: web, api.
+  testTypes     String
+  browser       String
+  headless      Boolean
+  /// queued, running, cancelling, completed, cancelled or error.
+  status        String          @default("queued")
+  error         String?
+  total         Int             @default(0)
+  passed        Int             @default(0)
+  failed        Int             @default(0)
+  blocked       Int             @default(0)
+  createdAt     DateTime        @default(now())
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  results       TestRunResult[]
+  followUpPlans TestPlan[]      @relation("FollowUpPlans")
+
+  @@index([status, createdAt])
+  @@index([planId, createdAt])
+}
+
+model TestRunResult {
+  id         String   @id @default(cuid())
+  runId      String
+  run        TestRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  position   Int
+  testCaseId String
+  name       String
+  browser    String
+  /// passed, failed or blocked.
+  status     String
+  durationMs Int
+  error      String?
+  failedStep Int?
+  /// Paths inside the run's results folder, only for tests that did not pass.
+  screenshot String?
+  trace      String?
+  video      String?
+  steps      Json
+  createdAt  DateTime @default(now())
+  /// Our first review's guess: probability that this failure is a real bug in the application.
+  bugLikelihood Float?
+  /// The team's decision: bug or test_issue (a problem with the test or its environment).
+  triage        String?
+  triagedById   String?
+  triagedBy     User?     @relation(fields: [triagedById], references: [id])
+  triagedAt     DateTime?
+}

@@ -1,0 +1,26 @@
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# App
+/.next/
+/data/
+/src/generated/
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
+# Archify browser-check output
+/docs/plan/*.visual-check.*
+/.next-e2e/
+/results/
+/results-e2e/

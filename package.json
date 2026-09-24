@@ -1,0 +1,58 @@
+{
+  "name": "playwright-codeless-automation",
+  "version": "1.0.0",
+  "description": "Codeless test automation platform built on Playwright",
+  "scripts": {
+    "dev": "concurrently --kill-others --names web,worker --prefix-colors blue,magenta \"next dev --port 3001\" \"npm run worker\"",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "prisma migrate dev && prisma generate",
+    "db:seed": "prisma db seed",
+    "postinstall": "prisma generate",
+    "test:e2e": "playwright test",
+    "quality:jev": "tsx scripts/jev-review.ts",
+    "check": "npm run typecheck && npm run lint && npm run test:e2e && npm run quality:jev",
+    "user:create": "tsx scripts/create-user.ts",
+    "tests:run": "tsx scripts/run-tests.ts",
+    "dev:web": "next dev --port 3001",
+    "worker": "tsx scripts/worker.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "concurrently": "^10.0.5",
+    "dotenv": "^18.0.3",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.6",
+    "prisma": "^7.10.0",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.63.0",
+    "@prisma/adapter-better-sqlite3": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "bcryptjs": "^3.0.3",
+    "csv-parse": "^7.0.2",
+    "iron-session": "^9.0.1",
+    "next": "^16.3.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "read-excel-file": "^9.3.10",
+    "server-only": "^0.0.1",
+    "write-excel-file": "^4.1.1",
+    "zod": "^4.6.5"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.2",
+    "mysql2": "^3.24.4"
+  },
+  "private": true
+}

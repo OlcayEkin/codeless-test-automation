@@ -1,0 +1,311 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Codeless Test Automation Flow",
+    "locale": "en",
+    "output": "codeless-flow.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "create-plan",
+        "label": "Create a test plan",
+        "focus": [
+          "dashboard",
+          "upload",
+          "quality",
+          "invalid"
+        ],
+        "note": "Upload Excel, CSV or JSON. Files are validated and Jev scores each test case before it is saved."
+      },
+      {
+        "id": "run-plan",
+        "label": "Configure and run",
+        "focus": [
+          "configure",
+          "start",
+          "execute"
+        ],
+        "note": "Pick Web or API, headless mode and browsers, then run now or on a schedule."
+      },
+      {
+        "id": "report",
+        "label": "Results and follow-up",
+        "focus": [
+          "execute",
+          "report",
+          "review",
+          "followup"
+        ],
+        "note": "Notify, chart Pass/Fail/Blocked, tag failures as bug or blockage, and rerun failed tests."
+      }
+    ],
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "frontend": {
+          "label": "User screen"
+        },
+        "backend": {
+          "label": "Test runner"
+        },
+        "security": {
+          "label": "Check or error"
+        },
+        "messagebus": {
+          "label": "Follow-up"
+        },
+        "database": {
+          "label": "Results"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "user",
+      "label": "User"
+    },
+    {
+      "id": "platform",
+      "label": "Platform + Playwright Runner"
+    },
+    {
+      "id": "exceptions",
+      "label": "Errors + Follow-up",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "access",
+      "label": "Access",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "plan",
+      "label": "Test plan",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "execution",
+      "label": "Execution",
+      "fromCol": 3,
+      "toCol": 4
+    },
+    {
+      "id": "reporting",
+      "label": "Reporting",
+      "fromCol": 5,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "login",
+    "dashboard",
+    "upload",
+    "quality",
+    "configure",
+    "start",
+    "execute",
+    "report",
+    "review"
+  ],
+  "nodes": [
+    {
+      "id": "login",
+      "lane": "user",
+      "col": 0,
+      "type": "frontend",
+      "label": "Log in",
+      "sublabel": "team account"
+    },
+    {
+      "id": "dashboard",
+      "lane": "user",
+      "col": 1,
+      "type": "frontend",
+      "label": "Dashboard",
+      "sublabel": "team test plans"
+    },
+    {
+      "id": "upload",
+      "lane": "user",
+      "col": 2,
+      "type": "frontend",
+      "label": "Upload Tests",
+      "sublabel": "Excel, CSV, JSON"
+    },
+    {
+      "id": "quality",
+      "lane": "platform",
+      "col": 2,
+      "type": "security",
+      "label": "Validate",
+      "sublabel": "schema + Jev score",
+      "tag": "gate"
+    },
+    {
+      "id": "configure",
+      "lane": "user",
+      "col": 3,
+      "type": "frontend",
+      "label": "Configure Run",
+      "sublabel": "type + browsers",
+      "width": 112
+    },
+    {
+      "id": "start",
+      "lane": "user",
+      "col": 4,
+      "type": "frontend",
+      "label": "Start",
+      "sublabel": "Play or schedule"
+    },
+    {
+      "id": "execute",
+      "lane": "platform",
+      "col": 4,
+      "type": "backend",
+      "label": "Execute",
+      "sublabel": "Chrome, Edge, Firefox",
+      "tag": "worker"
+    },
+    {
+      "id": "report",
+      "lane": "platform",
+      "col": 5,
+      "type": "database",
+      "label": "Results",
+      "sublabel": "notify + chart"
+    },
+    {
+      "id": "review",
+      "lane": "user",
+      "col": 5,
+      "type": "frontend",
+      "label": "Review Failures",
+      "width": 116,
+      "sublabel": "bug or blockage"
+    },
+    {
+      "id": "login_error",
+      "lane": "platform",
+      "col": 0,
+      "type": "security",
+      "label": "Login Error",
+      "sublabel": "retry"
+    },
+    {
+      "id": "invalid",
+      "lane": "exceptions",
+      "col": 2,
+      "type": "security",
+      "label": "Invalid File",
+      "sublabel": "row or field errors"
+    },
+    {
+      "id": "followup",
+      "lane": "exceptions",
+      "col": 5,
+      "type": "messagebus",
+      "label": "Follow-up Plan",
+      "sublabel": "failed tests only"
+    }
+  ],
+  "edges": [
+    {
+      "from": "login",
+      "to": "dashboard"
+    },
+    {
+      "from": "dashboard",
+      "to": "upload",
+      "label": "no plan"
+    },
+    {
+      "from": "upload",
+      "to": "quality"
+    },
+    {
+      "from": "quality",
+      "to": "configure",
+      "label": "saved",
+      "variant": "emphasis"
+    },
+    {
+      "from": "dashboard",
+      "to": "configure",
+      "label": "plan exists",
+      "role": "branch"
+    },
+    {
+      "from": "configure",
+      "to": "start"
+    },
+    {
+      "from": "start",
+      "to": "execute",
+      "label": "queued",
+      "variant": "emphasis"
+    },
+    {
+      "from": "execute",
+      "to": "report"
+    },
+    {
+      "from": "report",
+      "to": "review"
+    },
+    {
+      "from": "login",
+      "to": "login_error",
+      "label": "failed",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "quality",
+      "to": "invalid",
+      "label": "rejected",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "report",
+      "to": "followup",
+      "variant": "dashed",
+      "label": "rerun failed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Build Phases",
+      "items": [
+        "Start: login, import, runner",
+        "Then: results, schedule, demo"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Local Proof of Concept",
+      "items": [
+        "Next.js + SQLite, one machine",
+        "Tests run in a separate worker"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Safety Rules",
+      "items": [
+        "Uploads never run as code",
+        "Secrets in ignored local files"
+      ]
+    }
+  ]
+}

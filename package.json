@@ -17,7 +17,8 @@
     "user:create": "tsx scripts/create-user.ts",
     "tests:run": "tsx scripts/run-tests.ts",
     "dev:web": "next dev --port 3001",
-    "worker": "tsx scripts/worker.ts"
+    "worker": "tsx scripts/worker.ts",
+    "demo:seed": "tsx scripts/demo-seed.ts"
   },
   "keywords": [],
   "author": "",

@@ -3,6 +3,8 @@ import { listNotifications } from "@/lib/notifications";
 import { requireUser } from "@/lib/session";
 import { markAllReadAction, openNotificationAction } from "../plans/actions";
 
+export const metadata = { title: "Notifications" };
+
 export default async function NotificationsPage() {
   const user = await requireUser();
   const notifications = await listNotifications(user.id);

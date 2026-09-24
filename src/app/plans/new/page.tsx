@@ -3,6 +3,8 @@ import { TopBar } from "@/components/top-bar";
 import { requireUser } from "@/lib/session";
 import { CreatePlanForm } from "./create-plan-form";
 
+export const metadata = { title: "Create a test plan" };
+
 export default async function NewPlanPage() {
   const user = await requireUser();
   return (

@@ -61,7 +61,7 @@ test("run a plan and follow it to the results", async ({ page }) => {
 
   await page.getByRole("link", { name: "← Runnable plan" }).click();
   await expect(page.getByRole("heading", { name: "Recent runs" })).toBeVisible();
-  await expect(page.getByText("version 1 · 2 passed, 1 failed, 0 blocked")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Recent runs" }).getByRole("link", { name: "2 passed, 1 failed" })).toBeVisible();
 });
 
 test("only API tests run when Web is unticked", async ({ page }) => {

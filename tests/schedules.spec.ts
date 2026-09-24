@@ -86,7 +86,7 @@ test("a due schedule starts a run, and the user is notified when it finishes", a
   await expect(async () => {
     await page.goto(planUrl);
     await expect(page.getByRole("region", { name: "Schedules" }).locator(".schedule")).toHaveCount(1);
-    await expect(page.getByText("version 1 · 1 passed, 0 failed, 0 blocked")).toBeVisible({ timeout: 1000 });
+    await expect(page.getByRole("region", { name: "Recent runs" }).getByRole("link", { name: "All 1 passed" })).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 60_000 });
   // It repeats daily, so it is still active with a next run in the future.
   await expect(page.getByRole("region", { name: "Schedules" })).toContainText(/Next run: .*09:00/);

@@ -243,7 +243,7 @@ export async function listSchedulesForPlan(teamId: string, planId: string) {
   });
 }
 
-/** Pauses or resumes a schedule. Resuming picks the next future time; a finished one-time schedule cannot resume. */
+/** Stops or continues a schedule. Continuing picks the next future time; a finished one-time schedule cannot continue. */
 export async function setScheduleActive(teamId: string, scheduleId: string, active: boolean): Promise<string | null> {
   const schedule = await db.testSchedule.findFirst({ where: { id: scheduleId, plan: { teamId } }, select: { id: true, startAt: true, repeat: true } });
   if (!schedule) return "This schedule was not found in your team.";

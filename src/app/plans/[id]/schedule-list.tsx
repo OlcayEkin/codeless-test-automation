@@ -27,13 +27,13 @@ export function ScheduleList({ planId, schedules }: { planId: string; schedules:
                   {schedule.createdBy.name}
                 </span>
                 <span className={schedule.active ? "small" : "muted small"}>
-                  {schedule.active && schedule.nextRunAt ? `Next run: ${formatWhen(schedule.nextRunAt)}` : "Paused"}
+                  {schedule.active && schedule.nextRunAt ? `Next run: ${formatWhen(schedule.nextRunAt)}` : "Stopped"}
                 </span>
               </div>
               <div className="schedule-actions">
                 <form action={setScheduleActiveAction.bind(null, planId, schedule.id, !schedule.active)}>
                   <button type="submit" className="secondary small-button">
-                    {schedule.active ? "Pause" : "Resume"}
+                    {schedule.active ? "Stop" : "Continue"}
                   </button>
                 </form>
                 <form action={deleteScheduleAction.bind(null, planId, schedule.id)}>

@@ -1,4 +1,4 @@
-import "server-only";
+// Used by the web app and by scripts. The API key is only ever read from server-side environment variables.
 import { askJev, type NoulAnswer, type ScoreAnswer } from "../jev";
 import type { TestCaseInput } from "./format";
 

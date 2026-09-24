@@ -5,6 +5,8 @@ import { getRunSetup } from "@/lib/runs";
 import { requireUser } from "@/lib/session";
 import { RunSettingsForm } from "./run-settings-form";
 
+export const metadata = { title: "Run tests" };
+
 export default async function RunSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { db } from "@/lib/db";
+import { DEMO_PLAN_NAME, demoPlanData } from "@/lib/demo";
 import { addPlanVersion, createPlan, deletePlan, removeTestCase } from "@/lib/plans";
 import { openNotification, markAllRead } from "@/lib/notifications";
 import { cancelRun, createFollowUpPlan, createSchedule, deleteSchedule, setScheduleActive, setTriage, startRun } from "@/lib/runs";
@@ -197,4 +199,12 @@ export async function markAllReadAction(): Promise<void> {
   const user = await requireUser();
   await markAllRead(user.id);
   revalidatePath("/notifications");
+}
+
+/** Adds the demo plan to the user's team, or opens it when the team already has one. */
+export async function loadDemoPlanAction(): Promise<void> {
+  const user = await requireUser();
+  const existing = await db.testPlan.findFirst({ where: { teamId: user.teamId, name: DEMO_PLAN_NAME }, select: { id: true } });
+  const plan = existing ?? (await db.testPlan.create({ data: await demoPlanData({ id: user.id, teamId: user.teamId }), select: { id: true } }));
+  redirect(`/plans/${plan.id}${existing ? "" : "?demo=1"}`);
 }

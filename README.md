@@ -45,7 +45,7 @@ flowchart TD
     Y -- No --> Z[Test reporting complete]
 ```
 
-Scheduling and notifications are the next phase; everything else in the chart is built.
+Everything in the chart is built. Notification emails are printed to the worker's console until the app moves to a server.
 The full plan, with phases and safety rules, is in [docs/plan/codeless-flow.html](docs/plan/codeless-flow.html). Download it and open it in a browser.
 
 ## Setup
@@ -69,6 +69,11 @@ npm run dev                       # web app on http://localhost:3001 plus the ba
 | `TYPESAFE_API_KEY` | Optional. Enables quality scoring and failure suggestions |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Optional. Choose the seeded admin's login |
 
+## Try the demo
+
+Sign in, press **Load demo plan** on the dashboard, then press **▶ Run tests**. The demo runs against a public practice site, and one test fails on purpose so you can try the failure review.
+For presenting it to others, follow [docs/demo-script.md](docs/demo-script.md).
+
 ## Everyday commands
 
 | Command | What it does |
@@ -76,6 +81,7 @@ npm run dev                       # web app on http://localhost:3001 plus the ba
 | `npm run dev` | Web app and worker together |
 | `npm run user:create -- --username name --password '…'` | Add a team member (`--role ADMIN` for an admin) |
 | `npm run tests:run -- --plan "Plan name"` | Run a saved plan from the terminal |
+| `npm run demo:seed -- --run` | Add the demo plan for the admin and queue a run |
 | `npm run check` | Type check, lint, end-to-end tests and the Jev code review |
 
 ## Project layout

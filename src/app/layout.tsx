@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-export const metadata: Metadata = { title: "Codeless Test Automation" };
+export const metadata: Metadata = { title: { default: "Codeless Test Automation", template: "%s · Codeless Test Automation" } };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

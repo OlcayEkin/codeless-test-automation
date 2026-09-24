@@ -9,6 +9,8 @@ import { AutoRefresh } from "./auto-refresh";
 import { FollowUpForm } from "./follow-up-form";
 import { ResultsChart } from "./results-chart";
 
+export const metadata = { title: "Test run" };
+
 const STATUS_TEXT: Record<string, string> = {
   queued: "Waiting for the worker to start…",
   running: "Running",

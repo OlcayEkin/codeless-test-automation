@@ -94,7 +94,9 @@ model TestStep {
   id         String   @id @default(cuid())
   testCaseId String
   testCase   TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
-  position   Int
+  position    Int
+  /// What this step is for, in the tester's own words. Not used when running.
+  description String?
   action     String
   target     String?
   value      String?

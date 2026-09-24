@@ -160,7 +160,7 @@ export async function createFollowUpPlan(user: { id: string; teamId: string }, r
     const testCases = await tx.testCase.findMany({
       where: { versionId: run.versionId, externalId: { in: ids } },
       orderBy: { position: "asc" },
-      select: { externalId: true, name: true, quality: true, steps: { orderBy: { position: "asc" }, select: { action: true, target: true, value: true, expected: true } } },
+      select: { externalId: true, name: true, quality: true, steps: { orderBy: { position: "asc" }, select: { description: true, action: true, target: true, value: true, expected: true } } },
     });
     if (!testCases.length) return { ok: false, error: "The failed test cases could not be found." };
 

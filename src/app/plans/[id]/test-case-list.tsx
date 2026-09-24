@@ -2,7 +2,7 @@ import type { TestCaseQuality } from "@/lib/test-cases/quality";
 import { describeQuality } from "@/lib/test-cases/quality-text";
 import { DeleteTestCaseButton } from "./delete-test-case-button";
 
-type Step = { id: string; action: string; target: string | null; value: string | null; expected: string | null };
+type Step = { id: string; description: string | null; action: string; target: string | null; value: string | null; expected: string | null };
 type TestCase = { id: string; externalId: string; name: string; quality: unknown; steps: Step[] };
 
 /** The plan's test cases, each expandable to its steps and our first review. Delete only on the latest version. */
@@ -30,6 +30,7 @@ export function TestCaseList({ plan, testCases, editable }: { plan: { id: string
                 <thead>
                   <tr>
                     <th>#</th>
+                    <th>Description</th>
                     <th>Action</th>
                     <th>Target</th>
                     <th>Value</th>
@@ -40,6 +41,7 @@ export function TestCaseList({ plan, testCases, editable }: { plan: { id: string
                   {testCase.steps.map((step, i) => (
                     <tr key={step.id}>
                       <td>{i + 1}</td>
+                      <td className="wrap">{step.description}</td>
                       <td>
                         <code>{step.action}</code>
                       </td>

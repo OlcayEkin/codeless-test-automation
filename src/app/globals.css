@@ -156,3 +156,15 @@ select { font: inherit; padding: 0.6rem 0.75rem; border: 1px solid var(--border)
 .schedule { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; }
 .schedule > div:first-child { display: grid; gap: 0.15rem; }
 .schedule-actions { display: flex; gap: 0.4rem; align-items: flex-start; }
+.button.secondary-button { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.cases-head { display: flex; justify-content: flex-end; margin: 1rem 0 0; }
+.step-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.step-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.step-head h2 { margin: 0; }
+.step-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem; }
+.step-summary > span:nth-child(2) { flex: 1; min-width: 12rem; }
+.done-question { margin: 0; font-weight: 600; }
+.done-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.done-actions button { flex: 1 1 14rem; }
+.field { display: grid; gap: 0.35rem; }
+.field > label { font-weight: 500; }

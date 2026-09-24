@@ -13,7 +13,7 @@ export const IMPORT_LIMITS = {
 } as const;
 
 /** Column order used by the Excel and CSV formats and their templates. */
-export const COLUMNS = ["test_case_id", "test_case_name", "step", "action", "target", "value", "expected_result"] as const;
+export const COLUMNS = ["test_case_id", "test_case_name", "step", "description", "action", "target", "value", "expected_result"] as const;
 export type Column = (typeof COLUMNS)[number];
 export const REQUIRED_COLUMNS: Column[] = ["test_case_id", "test_case_name", "step", "action"];
 
@@ -48,7 +48,7 @@ export type Action = keyof typeof ACTIONS;
 export const ACTION_NAMES = Object.keys(ACTIONS) as Action[];
 export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 
-export type TestStepInput = { action: Action; target?: string; value?: string; expected?: string };
+export type TestStepInput = { description?: string; action: Action; target?: string; value?: string; expected?: string };
 export type TestCaseInput = { id: string; name: string; steps: TestStepInput[] };
 
 export type Severity = "error" | "warning";
@@ -121,4 +121,10 @@ const API_ACTIONS = new Set<string>(["api_request", "expect_status"]);
 /** A test case is an API test when it only calls APIs and checks their status; otherwise it needs a browser. */
 export function testTypeOf(testCase: { steps: { action: string }[] }): TestType {
   return testCase.steps.every((step) => API_ACTIONS.has(step.action)) ? "api" : "web";
+}
+
+/** The next free id in the TC-001 style, one above the highest number already used. */
+export function nextTestCaseId(existingIds: string[]): string {
+  const highest = existingIds.reduce((max, id) => Math.max(max, Number(/^TC-(\d+)$/i.exec(id)?.[1] ?? 0)), 0);
+  return `TC-${String(highest + 1).padStart(3, "0")}`;
 }

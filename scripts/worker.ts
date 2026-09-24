@@ -118,13 +118,13 @@ async function loadTestCases(versionId: string, types: TestType[]): Promise<Test
   const testCases = await db.testCase.findMany({
     where: { versionId },
     orderBy: { position: "asc" },
-    select: { externalId: true, name: true, steps: { orderBy: { position: "asc" }, select: { action: true, target: true, value: true, expected: true } } },
+    select: { externalId: true, name: true, steps: { orderBy: { position: "asc" }, select: { description: true, action: true, target: true, value: true, expected: true } } },
   });
   return testCases
     .map((tc) => ({
       id: tc.externalId,
       name: tc.name,
-      steps: tc.steps.map((s) => ({ action: s.action as Action, target: s.target ?? undefined, value: s.value ?? undefined, expected: s.expected ?? undefined })),
+      steps: tc.steps.map((s) => ({ description: s.description ?? undefined, action: s.action as Action, target: s.target ?? undefined, value: s.value ?? undefined, expected: s.expected ?? undefined })),
     }))
     .filter((tc) => types.includes(testTypeOf(tc)));
 }

@@ -196,3 +196,24 @@ test.describe("step descriptions and ids", () => {
     expect(nextTestCaseId(["tc-120"])).toBe("TC-121");
   });
 });
+
+test.describe("CI configuration", () => {
+  test("checks repository, workflow, branch and base address", async () => {
+    const { ciSettingsSchema } = await import("../src/lib/ci-config");
+    const valid = { repository: "my-org/my-app", workflowFile: "codeless-tests.yml", branch: "release/2.0", baseUrl: "" };
+    expect(ciSettingsSchema.safeParse(valid).success).toBe(true);
+    for (const bad of [{ repository: "my-app" }, { workflowFile: "tests.txt" }, { branch: "bad branch" }, { baseUrl: "ftp://x" }]) {
+      expect(ciSettingsSchema.safeParse({ ...valid, ...bad }).success, JSON.stringify(bad)).toBe(false);
+    }
+  });
+
+  test("the workflow file runs the plan and uploads the results", async () => {
+    const { githubWorkflowYaml } = await import("../src/lib/ci-config");
+    const yaml = githubWorkflowYaml();
+    expect(yaml).toContain("workflow_dispatch:");
+    expect(yaml).toContain("run-name: Codeless run ${{ inputs.run_id }}");
+    expect(yaml).toContain("repository: OlcayEkin/codeless-test-automation");
+    expect(yaml).toContain("npm run tests:run -- --file ../plan.json --out ../codeless-results");
+    expect(yaml).toContain("name: codeless-results");
+  });
+});

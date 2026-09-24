@@ -8,7 +8,12 @@ function createClient() {
   return new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
 }
 
-// Reuse one client across hot reloads in development.
+// Reuse one client across hot reloads in development, but not across a regenerated client:
+// after a schema change `prisma generate` rewrites the client, this module reloads with a new
+// PrismaClient class, and the old instance would not know the new tables.
 const globalForDb = globalThis as unknown as { db?: PrismaClient };
-export const db = globalForDb.db ?? createClient();
+const cached = globalForDb.db;
+const isCurrent = cached instanceof PrismaClient;
+if (cached && !isCurrent) void (cached as { $disconnect?: () => Promise<void> }).$disconnect?.().catch(() => undefined);
+export const db = isCurrent ? cached : createClient();
 if (process.env.NODE_ENV !== "production") globalForDb.db = db;

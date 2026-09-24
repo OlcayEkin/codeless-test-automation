@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { DEMO_PLAN_NAME, demoPlanData } from "@/lib/demo";
 import { addPlanVersion, addTestCase, createPlan, deletePlan, getPlanForTeam, removeTestCase } from "@/lib/plans";
 import { openNotification, markAllRead } from "@/lib/notifications";
+import { retestConnection, savePlanConfig } from "@/lib/plan-config";
 import { cancelRun, createFollowUpPlan, createSchedule, deleteSchedule, setScheduleActive, setTriage, startRun } from "@/lib/runs";
 import { isRepeat } from "@/lib/schedule";
 import { requireUser } from "@/lib/session";
@@ -263,4 +264,34 @@ export async function createTestCaseAction(planId: string, baseVersion: number, 
       : { error: "Someone changed this plan while you were working. Copy your steps, reload the page and try again." };
   }
   redirect(`/plans/${planId}?version=${result.version}&added=${encodeURIComponent(testCase.id)}`);
+}
+
+export type ConfigState = { error?: string; saved?: boolean };
+
+export async function saveConfigurationAction(planId: string, _prev: ConfigState, formData: FormData): Promise<ConfigState> {
+  const user = await requireUser();
+  const field = (name: string) => String(formData.get(name) ?? "");
+  let result: Awaited<ReturnType<typeof savePlanConfig>>;
+  try {
+    result = await savePlanConfig({ id: user.id, teamId: user.teamId }, planId, {
+      mode: field("mode"),
+      repository: field("repository"),
+      workflowFile: field("workflowFile"),
+      branch: field("branch"),
+      baseUrl: field("baseUrl"),
+      token: field("token"),
+    });
+  } catch (error) {
+    console.error("Saving the configuration failed", error);
+    return { error: "The configuration could not be saved. Please try again." };
+  }
+  if (!result.ok) return { error: result.error };
+  revalidatePath(`/plans/${planId}`);
+  return { saved: true };
+}
+
+export async function retestConnectionAction(planId: string): Promise<void> {
+  const user = await requireUser();
+  await retestConnection(user.teamId, planId);
+  revalidatePath(`/plans/${planId}`);
 }

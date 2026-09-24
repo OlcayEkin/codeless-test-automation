@@ -2,9 +2,11 @@ import Link from "next/link";
 import { TopBar } from "@/components/top-bar";
 import { notFound } from "next/navigation";
 import { canDeletePlan, getPlanForTeam } from "@/lib/plans";
+import { getPlanConfig } from "@/lib/plan-config";
 import { listRunsForPlan, listSchedulesForPlan } from "@/lib/runs";
 import { requireUser } from "@/lib/session";
 import type { TestCaseQuality } from "@/lib/test-cases/quality";
+import { ConfigurationSection } from "./configuration-section";
 import { DeletePlanButton } from "./delete-plan-button";
 import { QualitySummary } from "./quality-summary";
 import { RecentRuns } from "./recent-runs";
@@ -28,7 +30,11 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
 
   const plan = await getPlanForTeam(user.teamId, id, requested);
   if (!plan) notFound();
-  const [runs, schedules] = await Promise.all([listRunsForPlan(user.teamId, plan.id), listSchedulesForPlan(user.teamId, plan.id)]);
+  const [runs, schedules, config] = await Promise.all([
+    listRunsForPlan(user.teamId, plan.id),
+    listSchedulesForPlan(user.teamId, plan.id),
+    getPlanConfig(user.teamId, plan.id),
+  ]);
   const { version } = plan;
   const isLatest = version.version === plan.latestVersion;
   const flagged = version.testCases.filter((tc) => (tc.quality as TestCaseQuality | null)?.flags.length).length;
@@ -103,6 +109,8 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
           <p className="muted">The new file replaces the test cases. Earlier versions stay available below.</p>
           <UploadVersionForm planId={plan.id} />
         </section>
+
+        <ConfigurationSection planId={plan.id} config={{ ...config, connectionCheckedAt: config.connectionCheckedAt?.toISOString() ?? null }} />
 
         <VersionList planId={plan.id} versions={plan.versions} current={version.version} />
       </div>

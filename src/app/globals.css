@@ -167,3 +167,20 @@ select { font: inherit; padding: 0.6rem 0.75rem; border: 1px solid var(--border)
 .done-actions button { flex: 1 1 14rem; }
 .field { display: grid; gap: 0.35rem; }
 .field > label { font-weight: 500; }
+.connection { display: grid; gap: 0.2rem; padding: 0.75rem 1rem; border-radius: 8px; margin: 0.5rem 0; }
+.connection strong { letter-spacing: 0.04em; }
+.connection.access { background: var(--ok-bg); color: var(--ok-text); }
+.connection.failed { background: #fdecec; color: #8f1d1d; }
+@media (prefers-color-scheme: dark) { .connection.failed { background: #3a1616; color: #f5a3a3; } }
+.retest { margin-bottom: 0.75rem; }
+.config-form { margin-top: 0.5rem; }
+.ci-fields { display: grid; gap: 0.9rem; }
+.workflow summary { cursor: pointer; font-weight: 600; }
+.workflow[open] { display: grid; gap: 0.5rem; }
+pre.code { margin: 0; max-height: 18rem; overflow: auto; padding: 0.75rem; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); font-size: 0.8rem; }
+/* Grid items default to their content width; long code blocks must scroll inside the card instead. */
+.columns > * { min-width: 0; }
+.workflow { min-width: 0; }
+pre.code { max-width: 100%; }
+.hint code { overflow-wrap: anywhere; }
+.config-form, .ci-fields, .workflow[open] { grid-template-columns: minmax(0, 1fr); }

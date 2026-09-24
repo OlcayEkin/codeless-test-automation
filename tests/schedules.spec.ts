@@ -48,7 +48,7 @@ async function schedule(page: Page, when: string, repeat: string) {
   await page.getByRole("button", { name: "Save schedule" }).click();
 }
 
-test("schedule a repeating run, then pause, resume and delete it", async ({ page }) => {
+test("schedule a repeating run, then stop, continue and delete it", async ({ page }) => {
   await createPlanAndOpenRunSettings(page, "Nightly checks");
   await schedule(page, tomorrowAtNine(), "Every weekday (Monday to Friday)");
 
@@ -57,9 +57,9 @@ test("schedule a repeating run, then pause, resume and delete it", async ({ page
   await expect(schedules).toContainText("Every weekday at 09:00");
   await expect(schedules).toContainText(/Next run: \w{3} \d+ \w+, 09:00/);
 
-  await schedules.getByRole("button", { name: "Pause" }).click();
-  await expect(schedules).toContainText("Paused");
-  await schedules.getByRole("button", { name: "Resume" }).click();
+  await schedules.getByRole("button", { name: "Stop" }).click();
+  await expect(schedules).toContainText("Stopped");
+  await schedules.getByRole("button", { name: "Continue" }).click();
   await expect(schedules).toContainText(/Next run: .*09:00/);
 
   await schedules.getByRole("button", { name: /^Delete schedule/ }).click();

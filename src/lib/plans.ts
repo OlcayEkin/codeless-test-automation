@@ -21,6 +21,7 @@ function versionData(upload: Upload, uploadedById: string) {
         steps: {
           create: testCase.steps.map((step, stepPosition) => ({
             position: stepPosition,
+            description: step.description ?? null,
             action: step.action,
             target: step.target ?? null,
             value: step.value ?? null,
@@ -94,7 +95,7 @@ export async function getPlanForTeam(teamId: string, planId: string, versionNumb
           externalId: true,
           name: true,
           quality: true,
-          steps: { orderBy: { position: "asc" }, select: { id: true, action: true, target: true, value: true, expected: true } },
+          steps: { orderBy: { position: "asc" }, select: { id: true, description: true, action: true, target: true, value: true, expected: true } },
         },
       },
     },
@@ -169,7 +170,7 @@ export async function removeTestCase(user: { id: string; teamId: string }, planI
                 externalId: true,
                 name: true,
                 quality: true,
-                steps: { orderBy: { position: "asc" }, select: { action: true, target: true, value: true, expected: true } },
+                steps: { orderBy: { position: "asc" }, select: { description: true, action: true, target: true, value: true, expected: true } },
               },
             },
           },
@@ -208,5 +209,91 @@ export async function removeTestCase(user: { id: string; teamId: string }, planI
     });
     await tx.testPlan.update({ where: { id: plan.id }, data: { updatedAt: new Date() } });
     return { status: "removed", version };
+  });
+}
+
+export type AddCaseResult = { status: "added"; version: number } | { status: "not_found" | "outdated" };
+
+/**
+ * Adds one test case, built in the app, as a new version at the end of the plan.
+ * `baseVersion` is the version the user was looking at; if someone changed the plan since, nothing is saved.
+ */
+export async function addTestCase(
+  user: { id: string; teamId: string },
+  planId: string,
+  baseVersion: number,
+  testCase: TestCaseInput,
+  quality: QualityRun,
+): Promise<AddCaseResult> {
+  return db.$transaction(async (tx) => {
+    const plan = await tx.testPlan.findFirst({
+      where: { id: planId, teamId: user.teamId },
+      select: {
+        id: true,
+        versions: {
+          orderBy: { version: "desc" },
+          take: 1,
+          select: {
+            version: true,
+            qualityStatus: true,
+            testCases: {
+              orderBy: { position: "asc" },
+              select: {
+                externalId: true,
+                name: true,
+                quality: true,
+                steps: { orderBy: { position: "asc" }, select: { description: true, action: true, target: true, value: true, expected: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    const latest = plan?.versions[0];
+    if (!plan || !latest) return { status: "not_found" };
+    if (latest.version !== baseVersion || latest.testCases.some((tc) => tc.externalId === testCase.id)) return { status: "outdated" };
+
+    const newQuality = quality.byId.get(testCase.id);
+    const version = latest.version + 1;
+    await tx.testPlanVersion.create({
+      data: {
+        planId: plan.id,
+        version,
+        fileName: `Added ${testCase.id} “${testCase.name}”`,
+        format: "edit",
+        uploadedById: user.id,
+        // Keep "scored" only when the new test case was scored too.
+        qualityStatus: latest.qualityStatus === "scored" && !newQuality ? quality.status : latest.qualityStatus,
+        testCases: {
+          create: [
+            ...latest.testCases.map((tc, position) => ({
+              position,
+              externalId: tc.externalId,
+              name: tc.name,
+              quality: (tc.quality ?? undefined) as Prisma.InputJsonValue | undefined,
+              steps: { create: tc.steps.map((step, stepPosition) => ({ position: stepPosition, ...step })) },
+            })),
+            {
+              position: latest.testCases.length,
+              externalId: testCase.id,
+              name: testCase.name,
+              quality: (newQuality ?? undefined) as Prisma.InputJsonValue | undefined,
+              steps: {
+                create: testCase.steps.map((step, stepPosition) => ({
+                  position: stepPosition,
+                  description: step.description ?? null,
+                  action: step.action,
+                  target: step.target ?? null,
+                  value: step.value ?? null,
+                  expected: step.expected ?? null,
+                })),
+              },
+            },
+          ],
+        },
+      },
+    });
+    await tx.testPlan.update({ where: { id: plan.id }, data: { updatedAt: new Date() } });
+    return { status: "added", version };
   });
 }

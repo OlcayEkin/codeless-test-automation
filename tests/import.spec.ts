@@ -178,3 +178,21 @@ test.describe("schedules", () => {
     });
   });
 });
+
+test.describe("step descriptions and ids", () => {
+  test("reads the optional description column and field", async () => {
+    const csvResult = await parseUpload("t.csv", utf8(["test_case_id,test_case_name,step,description,action,target", "TC-1,A,1,Go to login,open,/login"].join("\n")));
+    const jsonResult = await parseUpload("t.json", utf8(JSON.stringify({ testCases: [{ id: "TC-1", name: "A", steps: [{ description: "Go to login", action: "open", target: "/login" }] }] })));
+    for (const result of [csvResult, jsonResult]) {
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.testCases[0].steps[0].description).toBe("Go to login");
+    }
+  });
+
+  test("suggests the next test case id", async () => {
+    const { nextTestCaseId } = await import("../src/lib/test-cases/format");
+    expect(nextTestCaseId([])).toBe("TC-001");
+    expect(nextTestCaseId(["TC-001", "TC-009", "LOGIN-3"])).toBe("TC-010");
+    expect(nextTestCaseId(["tc-120"])).toBe("TC-121");
+  });
+});

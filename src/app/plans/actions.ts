@@ -5,12 +5,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { DEMO_PLAN_NAME, demoPlanData } from "@/lib/demo";
-import { addPlanVersion, createPlan, deletePlan, removeTestCase } from "@/lib/plans";
+import { addPlanVersion, addTestCase, createPlan, deletePlan, getPlanForTeam, removeTestCase } from "@/lib/plans";
 import { openNotification, markAllRead } from "@/lib/notifications";
 import { cancelRun, createFollowUpPlan, createSchedule, deleteSchedule, setScheduleActive, setTriage, startRun } from "@/lib/runs";
 import { isRepeat } from "@/lib/schedule";
 import { requireUser } from "@/lib/session";
-import { IMPORT_LIMITS, type ImportIssue, type TestType } from "@/lib/test-cases/format";
+import { IMPORT_LIMITS, checkStep, nextTestCaseId, type ImportIssue, type TestStepInput, type TestType } from "@/lib/test-cases/format";
 import { parseUpload } from "@/lib/test-cases/parse";
 import { scoreTestCases } from "@/lib/test-cases/quality";
 
@@ -207,4 +207,60 @@ export async function loadDemoPlanAction(): Promise<void> {
   const existing = await db.testPlan.findFirst({ where: { teamId: user.teamId, name: DEMO_PLAN_NAME }, select: { id: true } });
   const plan = existing ?? (await db.testPlan.create({ data: await demoPlanData({ id: user.id, teamId: user.teamId }), select: { id: true } }));
   redirect(`/plans/${plan.id}${existing ? "" : "?demo=1"}`);
+}
+
+export type CreateCaseState = { error?: string; issues?: string[] };
+
+const stepSchema = z.object({
+  description: z.string().trim().max(IMPORT_LIMITS.maxCellLength).optional(),
+  action: z.string().trim(),
+  target: z.string().trim().max(IMPORT_LIMITS.maxCellLength).optional(),
+  value: z.string().max(IMPORT_LIMITS.maxCellLength).optional(),
+  expected: z.string().trim().max(IMPORT_LIMITS.maxCellLength).optional(),
+});
+const newCaseSchema = z.object({
+  name: z.string().trim().min(1, "Give the test case a title.").max(IMPORT_LIMITS.maxCellLength),
+  steps: z.array(stepSchema).min(1, "Add at least one step.").max(IMPORT_LIMITS.maxStepsPerCase),
+});
+
+/** Saves a test case built step by step in the app. Validated here again: the browser's checks are only a convenience. */
+export async function createTestCaseAction(planId: string, baseVersion: number, _prev: CreateCaseState, formData: FormData): Promise<CreateCaseState> {
+  const user = await requireUser();
+  let raw: unknown;
+  try {
+    raw = JSON.parse(String(formData.get("testCase") ?? ""));
+  } catch {
+    return { error: "The test case could not be read. Reload the page and try again." };
+  }
+  const parsed = newCaseSchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const steps = parsed.data.steps.map((step) => ({
+    description: step.description || undefined,
+    action: step.action as TestStepInput["action"],
+    target: step.target || undefined,
+    value: step.value || undefined,
+    expected: step.expected || undefined,
+  }));
+  const issues = steps.flatMap((step, i) => checkStep(step).map((message) => `Step ${i + 1}: ${message}`));
+  if (issues.length) return { error: "Some steps need fixing.", issues };
+
+  const plan = await getPlanForTeam(user.teamId, planId);
+  if (!plan) return { error: "This test plan was not found in your team." };
+  const testCase = { id: nextTestCaseId(plan.version.testCases.map((tc) => tc.externalId)), name: parsed.data.name, steps };
+  const quality = await scoreTestCases([testCase]);
+
+  let result: Awaited<ReturnType<typeof addTestCase>>;
+  try {
+    result = await addTestCase({ id: user.id, teamId: user.teamId }, planId, baseVersion, testCase, quality);
+  } catch (error) {
+    console.error("Saving the test case failed", error);
+    return { error: "The test case could not be saved. Please try again." };
+  }
+  if (result.status !== "added") {
+    return result.status === "not_found"
+      ? { error: "This test plan was not found in your team." }
+      : { error: "Someone changed this plan while you were working. Copy your steps, reload the page and try again." };
+  }
+  redirect(`/plans/${planId}?version=${result.version}&added=${encodeURIComponent(testCase.id)}`);
 }

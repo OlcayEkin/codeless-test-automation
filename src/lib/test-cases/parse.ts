@@ -174,6 +174,7 @@ export function rowsToTestCases(rows: Cell[][]): ParsedCases {
     group.stepNumbers.set(stepNumber, rowNumber);
 
     const step: TestStepInput = {
+      description: get("description") || undefined,
       action: action as TestStepInput["action"],
       target: get("target") || undefined,
       value: get("value") || undefined,
@@ -204,6 +205,7 @@ const jsonSchema = z.object({
         steps: z
           .array(
             z.object({
+              description: text().optional(),
               action: z.string().trim().toLowerCase(),
               target: text().optional(),
               value: z.union([text(), z.number().transform(String)]).optional(),
@@ -247,6 +249,7 @@ export function parseJsonText(source: string): ParsedCases {
 
     const steps = testCase.steps.map((step, stepIndex) => {
       const clean: TestStepInput = {
+        description: step.description || undefined,
         action: step.action as TestStepInput["action"],
         target: step.target || undefined,
         value: step.value || undefined,

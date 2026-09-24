@@ -20,10 +20,10 @@ const FORMAT_LABEL: Record<string, string> = { xlsx: "Excel", csv: "CSV", json: 
 const DESCRIBED_FORMATS = new Set(["edit", "follow-up", "demo"]);
 const formatDate = (date: Date) => date.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 
-export default async function PlanPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ version?: string; scheduled?: string; scheduleError?: string; demo?: string }> }) {
+export default async function PlanPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ version?: string; scheduled?: string; scheduleError?: string; demo?: string; added?: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  const { version: versionParam, scheduled, scheduleError, demo } = await searchParams;
+  const { version: versionParam, scheduled, scheduleError, demo, added } = await searchParams;
   const requested = versionParam && /^\d{1,6}$/.test(versionParam) ? Number(versionParam) : undefined;
 
   const plan = await getPlanForTeam(user.teamId, id, requested);
@@ -57,6 +57,11 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
         </div>
       </div>
 
+      {added && (
+        <p className="notice ok" role="status">
+          {added.slice(0, 20)} is saved to the plan.
+        </p>
+      )}
       {demo === "1" && (
         <p className="notice ok" role="status">
           The demo plan is ready. Press ▶ Run tests to watch it run. One test fails on purpose, so you can try the failure review.
@@ -81,6 +86,13 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
 
       <QualitySummary status={version.qualityStatus} flagged={flagged} total={version.testCases.length} />
 
+      {isLatest && (
+        <p className="cases-head">
+          <Link href={`/plans/${plan.id}/test-cases/new`} className="button secondary-button">
+            + Create test case
+          </Link>
+        </p>
+      )}
       <TestCaseList plan={plan} testCases={version.testCases} editable={isLatest} />
 
       <div className="columns">

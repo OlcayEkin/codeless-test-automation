@@ -46,6 +46,7 @@ export async function demoPlanData(user: { id: string; teamId: string }): Promis
             steps: {
               create: testCase.steps.map((step, stepPosition) => ({
                 position: stepPosition,
+                description: step.description ?? null,
                 action: step.action,
                 target: step.target ?? null,
                 value: step.value ?? null,

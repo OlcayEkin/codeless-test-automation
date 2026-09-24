@@ -11,6 +11,8 @@ import { config } from "dotenv";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient, type Prisma } from "../src/generated/prisma/client";
 import { testTypeOf, type Action, type TestCaseInput, type TestType } from "../src/lib/test-cases/format";
+import { runNotification, sendEmail } from "../src/lib/notify";
+import { isRepeat, nextRunAfter } from "../src/lib/schedule";
 import { suggestTriage } from "../src/lib/triage";
 import { runTestCases } from "../src/runner/run";
 import { BROWSERS, type BrowserName, type TestCaseResult } from "../src/runner/types";
@@ -38,6 +40,70 @@ async function recoverInterruptedRuns() {
     data: { status: "error", error: "The worker stopped before this run finished. Start it again.", finishedAt: new Date() },
   });
   if (count) log(`Marked ${count} interrupted run(s) as stopped.`);
+}
+
+/**
+ * Queues a run for every schedule that is due, then moves the schedule to its next time.
+ * The conditional update makes sure a schedule fires only once per time, even with several workers.
+ */
+async function startDueSchedules(now = new Date()) {
+  const due = await db.testSchedule.findMany({
+    where: { active: true, nextRunAt: { lte: now } },
+    select: { id: true, planId: true, createdById: true, testTypes: true, browser: true, headless: true, startAt: true, repeat: true, nextRunAt: true },
+  });
+  for (const schedule of due) {
+    const next = isRepeat(schedule.repeat) ? nextRunAfter(schedule.startAt, schedule.repeat, now) : null;
+    const { count } = await db.testSchedule.updateMany({
+      where: { id: schedule.id, nextRunAt: schedule.nextRunAt },
+      data: { nextRunAt: next, active: next !== null },
+    });
+    if (count !== 1) continue;
+
+    const version = await db.testPlanVersion.findFirst({
+      where: { planId: schedule.planId },
+      orderBy: { version: "desc" },
+      select: { id: true },
+    });
+    if (!version) continue;
+    await db.testRun.create({
+      data: {
+        planId: schedule.planId,
+        versionId: version.id,
+        scheduleId: schedule.id,
+        requestedById: schedule.createdById,
+        testTypes: schedule.testTypes,
+        browser: schedule.browser,
+        headless: schedule.headless,
+      },
+    });
+    log(`Schedule ${schedule.id} queued a run.${next ? ` Next: ${next.toLocaleString("en-GB")}.` : " It will not repeat."}`);
+  }
+}
+
+/** Tells the person who started the run how it went: in the app, and by email when they have an address. */
+async function notifyFinished(runId: string) {
+  const run = await db.testRun.findUnique({
+    where: { id: runId },
+    select: {
+      id: true,
+      status: true,
+      error: true,
+      total: true,
+      passed: true,
+      failed: true,
+      blocked: true,
+      scheduleId: true,
+      plan: { select: { name: true } },
+      requestedBy: { select: { id: true, email: true } },
+    },
+  });
+  if (!run || ["queued", "running", "cancelling"].includes(run.status)) return;
+  const message = runNotification({ ...run, planName: run.plan.name, scheduled: !!run.scheduleId });
+  await db.notification.create({ data: { userId: run.requestedBy.id, runId: run.id, ...message } });
+  if (run.requestedBy.email) {
+    const link = `${process.env.APP_URL || "http://localhost:3001"}/runs/${run.id}`;
+    await sendEmail({ to: run.requestedBy.email, subject: message.title, text: `${message.body}\n\nOpen the results: ${link}` });
+  }
 }
 
 /** Takes the oldest queued run. The conditional update makes sure only one worker can claim it. */
@@ -122,6 +188,7 @@ async function execute(runId: string) {
 
 async function loop() {
   while (!stopping) {
+    await startDueSchedules().catch((error: unknown) => log(`Could not start scheduled runs: ${error instanceof Error ? error.message : error}`));
     const runId = await claimNextRun().catch((error: unknown) => {
       log(`Could not read the queue: ${error instanceof Error ? error.message : error}`);
       return null;
@@ -141,6 +208,7 @@ async function loop() {
         .catch(() => undefined);
     } finally {
       currentRunId = undefined;
+      await notifyFinished(runId).catch((error: unknown) => log(`Could not send the notification: ${error instanceof Error ? error.message : error}`));
     }
   }
 }

@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 export const MEMBER = { login: "e2e-member", password: "e2e-Member-123" };
 export const TEAMMATE = { login: "e2e-teammate", password: "e2e-Teammate-123" };
 export const ADMIN = { login: "e2e@example.com", password: "e2e-Password-123" };
+export const SCHEDULER = { login: "e2e-scheduler", password: "e2e-Scheduler-123" };
 export const OUTSIDER = { login: "e2e-outsider", password: "e2e-Outsider-123" };
 
 export async function signIn(page: Page, login: string, password: string, remember = false) {

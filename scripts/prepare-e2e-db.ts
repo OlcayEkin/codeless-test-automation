@@ -30,6 +30,11 @@ try {
   );
   execFileSync(
     "npx",
+    ["tsx", "scripts/create-user.ts", "--username", "e2e-scheduler", "--password", "e2e-Scheduler-123", "--name", "Scheduler"],
+    { stdio: "inherit" },
+  );
+  execFileSync(
+    "npx",
     ["tsx", "scripts/create-user.ts", "--username", "e2e-outsider", "--password", "e2e-Outsider-123", "--name", "Outsider", "--team", "Other Team"],
     { stdio: "inherit" },
   );

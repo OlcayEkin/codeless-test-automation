@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { addPlanVersion, createPlan, deletePlan, removeTestCase } from "@/lib/plans";
-import { cancelRun, createFollowUpPlan, setTriage, startRun } from "@/lib/runs";
+import { openNotification, markAllRead } from "@/lib/notifications";
+import { cancelRun, createFollowUpPlan, createSchedule, deleteSchedule, setScheduleActive, setTriage, startRun } from "@/lib/runs";
+import { isRepeat } from "@/lib/schedule";
 import { requireUser } from "@/lib/session";
 import { IMPORT_LIMITS, type ImportIssue, type TestType } from "@/lib/test-cases/format";
 import { parseUpload } from "@/lib/test-cases/parse";
@@ -113,6 +115,22 @@ export async function startRunAction(planId: string, _prev: RunState, formData: 
   const types = formData.getAll("type").filter((t): t is TestType => t === "web" || t === "api");
   const settings = { types, browser: String(formData.get("browser") ?? ""), headless: formData.get("showBrowser") !== "on" };
 
+  if (formData.get("when") === "schedule") {
+    const repeat = String(formData.get("repeat") ?? "");
+    if (!isRepeat(repeat)) return { error: "Choose how often to repeat." };
+    // The browser converts the chosen local time to an exact moment, so time zones cannot shift it.
+    const startAt = new Date(String(formData.get("startAtIso") ?? ""));
+    let scheduled: Awaited<ReturnType<typeof createSchedule>>;
+    try {
+      scheduled = await createSchedule({ id: user.id, teamId: user.teamId }, planId, settings, startAt, repeat);
+    } catch (error) {
+      console.error("Creating the schedule failed", error);
+      return { error: "The schedule could not be saved. Please try again." };
+    }
+    if (!scheduled.ok) return { error: scheduled.error };
+    redirect(`/plans/${planId}?scheduled=1`);
+  }
+
   let result: Awaited<ReturnType<typeof startRun>>;
   try {
     result = await startRun({ id: user.id, teamId: user.teamId }, planId, settings);
@@ -154,4 +172,29 @@ export async function createFollowUpAction(runId: string, _prev: FollowUpState, 
   }
   if (!result.ok) return { error: result.error };
   redirect(`/plans/${result.planId}`);
+}
+
+export async function setScheduleActiveAction(planId: string, scheduleId: string, active: boolean): Promise<void> {
+  const user = await requireUser();
+  const problem = await setScheduleActive(user.teamId, scheduleId, active);
+  if (problem) redirect(`/plans/${planId}?scheduleError=${encodeURIComponent(problem)}`);
+  revalidatePath(`/plans/${planId}`);
+}
+
+export async function deleteScheduleAction(planId: string, scheduleId: string): Promise<void> {
+  const user = await requireUser();
+  await deleteSchedule(user.teamId, scheduleId);
+  revalidatePath(`/plans/${planId}`);
+}
+
+export async function openNotificationAction(id: string): Promise<void> {
+  const user = await requireUser();
+  const notification = await openNotification(user.id, id);
+  redirect(notification?.runId ? `/runs/${notification.runId}` : "/notifications");
+}
+
+export async function markAllReadAction(): Promise<void> {
+  const user = await requireUser();
+  await markAllRead(user.id);
+  revalidatePath("/notifications");
 }

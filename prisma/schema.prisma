@@ -32,8 +32,10 @@ model User {
   createdAt    DateTime   @default(now())
   testPlans    TestPlan[]
   uploads      TestPlanVersion[]
-  testRuns     TestRun[]
-  triaged      TestRunResult[]
+  testRuns      TestRun[]
+  triaged       TestRunResult[]
+  schedules     TestSchedule[]
+  notifications Notification[]
 }
 
 model TestPlan {
@@ -47,6 +49,7 @@ model TestPlan {
   updatedAt   DateTime          @updatedAt
   versions    TestPlanVersion[]
   runs        TestRun[]
+  schedules   TestSchedule[]
   /// Set when this plan was created from the failures of an earlier run.
   sourceRunId String?
   sourceRun   TestRun?          @relation("FollowUpPlans", fields: [sourceRunId], references: [id], onDelete: SetNull)
@@ -123,6 +126,10 @@ model TestRun {
   finishedAt    DateTime?
   results       TestRunResult[]
   followUpPlans TestPlan[]      @relation("FollowUpPlans")
+  /// Set when the run was started by a schedule instead of the Run tests button.
+  scheduleId    String?
+  schedule      TestSchedule?   @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  notifications Notification[]
 
   @@index([status, createdAt])
   @@index([planId, createdAt])
@@ -154,4 +161,40 @@ model TestRunResult {
   triagedById   String?
   triagedBy     User?     @relation(fields: [triagedById], references: [id])
   triagedAt     DateTime?
+}
+
+/// Starts runs automatically. Each run uses the plan's latest version at the time it starts.
+model TestSchedule {
+  id          String    @id @default(cuid())
+  planId      String
+  plan        TestPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User      @relation(fields: [createdById], references: [id])
+  testTypes   String
+  browser     String
+  headless    Boolean
+  startAt     DateTime
+  /// once, daily, weekdays or weekly.
+  repeat      String
+  /// When the worker should start the next run; null once a one-time schedule has run.
+  nextRunAt   DateTime?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  runs        TestRun[]
+
+  @@index([active, nextRunAt])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  runId     String?
+  run       TestRun?  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
 }

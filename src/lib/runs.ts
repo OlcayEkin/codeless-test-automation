@@ -1,6 +1,7 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { db } from "./db";
+import { isRepeat, nextRunAfter, type Repeat } from "./schedule";
 import { testTypeOf, type TestType } from "./test-cases/format";
 
 /** Browsers offered in the app. Chrome only for the proof of concept; the runner also supports edge and firefox. */
@@ -192,4 +193,71 @@ export async function createFollowUpPlan(user: { id: string; teamId: string }, r
     });
     return { ok: true, planId: plan.id };
   });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Schedules
+
+export type ScheduleResult = { ok: true; scheduleId: string } | { ok: false; error: string };
+const MAX_SCHEDULE_AHEAD_MS = 366 * 24 * 60 * 60 * 1000;
+
+export async function createSchedule(
+  user: { id: string; teamId: string },
+  planId: string,
+  settings: RunSettings,
+  startAt: Date,
+  repeat: Repeat,
+): Promise<ScheduleResult> {
+  if (!(ENABLED_BROWSERS as readonly string[]).includes(settings.browser)) return { ok: false, error: "Only Chrome is available for now." };
+  if (!settings.types.length) return { ok: false, error: "Choose Web, API or both." };
+  const now = Date.now();
+  if (Number.isNaN(startAt.getTime())) return { ok: false, error: "Choose a start date and time." };
+  if (startAt.getTime() < now - 60_000) return { ok: false, error: "The start time is in the past. Choose a later time." };
+  if (startAt.getTime() > now + MAX_SCHEDULE_AHEAD_MS) return { ok: false, error: "Choose a start time within the next year." };
+
+  const setup = await getRunSetup(user.teamId, planId);
+  if (!setup) return { ok: false, error: "This test plan was not found in your team." };
+  if (!settings.types.some((type) => setup.counts[type] > 0)) return { ok: false, error: "This plan has no test cases of the chosen type." };
+
+  const schedule = await db.testSchedule.create({
+    data: {
+      planId: setup.id,
+      createdById: user.id,
+      testTypes: settings.types.join(","),
+      browser: settings.browser,
+      headless: settings.headless,
+      startAt,
+      repeat,
+      nextRunAt: startAt,
+    },
+    select: { id: true },
+  });
+  return { ok: true, scheduleId: schedule.id };
+}
+
+export async function listSchedulesForPlan(teamId: string, planId: string) {
+  return db.testSchedule.findMany({
+    where: { planId, plan: { teamId }, OR: [{ active: true }, { nextRunAt: { not: null } }] },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, repeat: true, startAt: true, nextRunAt: true, active: true, testTypes: true, headless: true, createdBy: { select: { name: true } } },
+  });
+}
+
+/** Pauses or resumes a schedule. Resuming picks the next future time; a finished one-time schedule cannot resume. */
+export async function setScheduleActive(teamId: string, scheduleId: string, active: boolean): Promise<string | null> {
+  const schedule = await db.testSchedule.findFirst({ where: { id: scheduleId, plan: { teamId } }, select: { id: true, startAt: true, repeat: true } });
+  if (!schedule) return "This schedule was not found in your team.";
+  if (!active) {
+    await db.testSchedule.update({ where: { id: schedule.id }, data: { active: false } });
+    return null;
+  }
+  const next = isRepeat(schedule.repeat) ? nextRunAfter(schedule.startAt, schedule.repeat, new Date()) : null;
+  if (!next) return "This one-time schedule has already passed. Create a new schedule instead.";
+  await db.testSchedule.update({ where: { id: schedule.id }, data: { active: true, nextRunAt: next } });
+  return null;
+}
+
+export async function deleteSchedule(teamId: string, scheduleId: string) {
+  const { count } = await db.testSchedule.deleteMany({ where: { id: scheduleId, plan: { teamId } } });
+  return count === 1;
 }

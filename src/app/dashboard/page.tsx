@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { LastRun } from "@/components/last-run";
+import { TopBar } from "@/components/top-bar";
 import { listPlansForTeam } from "@/lib/plans";
 import { requireUser } from "@/lib/session";
-import { logout } from "../actions";
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
   const user = await requireUser();
@@ -11,17 +11,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   return (
     <>
-      <header className="topbar">
-        <strong>Codeless Test Automation</strong>
-        <span className="muted">
-          {user.name} · {user.role === "ADMIN" ? "Admin" : "Member"} · {user.team.name}
-        </span>
-        <form action={logout}>
-          <button type="submit" className="secondary">
-            Log out
-          </button>
-        </form>
-      </header>
+      <TopBar user={user} />
 
       <main className="page">
         <div className="page-head">

@@ -136,3 +136,45 @@ test.describe("quality wording", () => {
     expect(describeQuality({ clarity: 2.9, verifiesGoal: 0.91, fragileSelectors: 0.09 })[0].text).toBe("The steps are clear and easy to follow.");
   });
 });
+
+test.describe("schedules", () => {
+  // Thursday 24 September 2026, 09:00 local time.
+  const at = (day: number, hour = 9, minute = 0) => new Date(2026, 8, day, hour, minute);
+  const thursday = at(24);
+
+  test("works out the next run for each repeat option", async () => {
+    const { nextRunAfter } = await import("../src/lib/schedule");
+    expect(nextRunAfter(thursday, "once", at(23))).toEqual(thursday);
+    expect(nextRunAfter(thursday, "once", at(24, 9, 1))).toBeNull();
+    expect(nextRunAfter(thursday, "daily", at(24))).toEqual(at(25));
+    expect(nextRunAfter(thursday, "weekly", at(24, 10))).toEqual(new Date(2026, 9, 1, 9, 0)); // Thursday 1 Oct
+    // Friday's run is followed by Monday's, skipping the weekend.
+    expect(nextRunAfter(thursday, "weekdays", at(25, 9, 30))).toEqual(at(28));
+    // A weekday schedule that starts on a Saturday first runs on Monday.
+    expect(nextRunAfter(at(26), "weekdays", at(25))).toEqual(at(28));
+  });
+
+  test("skips missed times instead of catching up", async () => {
+    const { nextRunAfter } = await import("../src/lib/schedule");
+    const monthsLater = new Date(2027, 2, 10, 12, 0);
+    const next = nextRunAfter(thursday, "daily", monthsLater)!;
+    expect(next).toEqual(new Date(2027, 2, 11, 9, 0));
+  });
+
+  test("describes schedules in words", async () => {
+    const { describeSchedule } = await import("../src/lib/schedule");
+    expect(describeSchedule("weekdays", thursday)).toBe("Every weekday at 09:00");
+    expect(describeSchedule("weekly", thursday)).toBe("Every Thursday at 09:00");
+    expect(describeSchedule("once", thursday)).toBe("Once, on Thu 24 Sept, 09:00");
+  });
+
+  test("words the finished-run notification", async () => {
+    const { runNotification } = await import("../src/lib/notify");
+    const base = { id: "r", planName: "Smoke", total: 4, scheduled: false, status: "completed" };
+    expect(runNotification({ ...base, passed: 4, failed: 0, blocked: 0 }).title).toBe("✅ Smoke: all 4 passed");
+    expect(runNotification({ ...base, passed: 1, failed: 2, blocked: 1, scheduled: true })).toEqual({
+      title: "❌ Smoke: 2 failed, 1 blocked",
+      body: "Scheduled run finished: 1 passed, 2 failed, 1 blocked, of 4. Review the failures and tag them as bugs or test blockages.",
+    });
+  });
+});
